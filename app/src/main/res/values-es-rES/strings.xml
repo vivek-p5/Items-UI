@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Items UI</string>
+    <string name="language">Spanish</string>
+    <string name="sku">SKU</string>
+    <string name="item_name">Nombre del árticulo</string>
+    <string name="size">Tamaño</string>
+    <string name="pack">Embalar</string>
+    <string name="cost">Costo</string>
+    <string name="price">Precio</string>
+    <string name="stock">Existencias</string>
+    <string name="type">Artículo tipo</string>
+</resources>

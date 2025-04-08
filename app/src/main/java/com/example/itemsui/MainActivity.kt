@@ -1,41 +1,65 @@
 package com.example.itemsui
 
+import android.app.LocaleManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.os.LocaleList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.LocaleListCompat
 import com.example.itemsui.ui.theme.ItemsUITheme
 import com.example.itemsui.ui.theme.LufgaFont
+import java.util.Locale
 import kotlin.random.Random
-import kotlin.random.nextLong
 
 val items = generateDynamicItems(100)
 
@@ -46,9 +70,62 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ItemsUITheme {
+            var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            ItemsUITheme(darkTheme = isDarkTheme) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Items(modifier = Modifier.padding(innerPadding))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            val interactionSource = remember { MutableInteractionSource() }
+                            val isPressed by interactionSource.collectIsPressedAsState()
+                            val scale by animateFloatAsState(targetValue = if (isPressed) 0.9f else 1f )
+
+                            var isEnglishSelected by rememberSaveable { mutableStateOf(LocaleList.getDefault().toLanguageTags().contains("en",true)) }
+
+                            Button(
+                                modifier = Modifier.scale(scale),
+                                onClick = {
+                                    isEnglishSelected = !isEnglishSelected
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                                        getSystemService(LocaleManager::class.java).applicationLocales =
+                                            LocaleList.forLanguageTags(if (isEnglishSelected) "en" else "es")
+                                    }else{
+                                        val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(if (isEnglishSelected) "en" else "es")
+                                        AppCompatDelegate.setApplicationLocales(appLocale)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                ),
+                                interactionSource = interactionSource
+                            ) {
+                                Text(text = stringResource(R.string.language), color = if (isPressed) Color.Red else MaterialTheme.colorScheme.primary)
+                            }
+
+                            Spacer(Modifier.width(12.dp))
+
+                            IconButton(colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            ), onClick = {
+                                isDarkTheme = !isDarkTheme
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Refresh,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = null
+                                )
+                            }
+                        }
+                        Items()
+                    }
                 }
             }
         }
@@ -62,7 +139,7 @@ fun Items(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .padding(12.dp)
             .clip(RoundedCornerShape(36.dp))
-            .background(Color(0xFFF9F8F6))
+            .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
 
         Row(
@@ -71,87 +148,95 @@ fun Items(modifier: Modifier = Modifier) {
                 .padding(12.dp)
                 .clip(RoundedCornerShape(36.dp))
                 .background(
-                    Color(0xFFDADADA).copy(0.7f)
+                    MaterialTheme.colorScheme.tertiaryContainer/*Color(0xFFDADADA).copy(0.7f)*/
                 )
                 .padding(12.dp)
         ) {
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "SKU",
+                text = stringResource(R.string.sku),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.3f),
-                text = "Item Name",
+                text = stringResource(R.string.item_name),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Size",
+                text = stringResource(R.string.size),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Pack",
+                text = stringResource(R.string.pack),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Cost",
+                text = stringResource(R.string.cost),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Price",
+                text = stringResource(R.string.price),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Stock",
+                text = stringResource(R.string.stock),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 modifier = Modifier.weight(0.1f),
-                text = "Type",
+                text = stringResource(R.string.type),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontFamily = LufgaFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -380,9 +465,9 @@ fun generateDynamicItems(count: Int): Array<Item> {
         val size = "$sizeValue $sizeUnit"
         val pack = if (Random.nextBoolean()) Random.nextInt(1, 10) else null
         val isCostUp = if (Random.nextBoolean()) Random.nextBoolean() else null
-        val cost = Random.nextDouble(5.0, 100.0).toFixed(2)
+        val cost = Random.nextDouble(5.0, 100.0).toLocalFixed(2)//.toFixed(2)
         val isPriceUp = if (Random.nextBoolean()) Random.nextBoolean() else null
-        val price = Random.nextDouble(cost * 1.2, cost * 2.5).toFixed(2)
+        val price = Random.nextDouble(cost * 1.2, cost * 2.5).toLocalFixed(2)//.toFixed(2)
         val stock = Random.nextInt(0, 200)
         val types = arrayOf("Standard", "Split-Pack")
         val type = types[Random.nextInt(types.size)]
@@ -403,6 +488,8 @@ fun generateRandomItemName(): String {
 
     return "$prefix $noun $descriptor"
 }
+
+fun Double.toLocalFixed(digits: Int) = String.format(Locale.ENGLISH,"%.${digits}f",this).toDouble()
 
 fun Double.toFixed(digits: Int) = "%.${digits}f".format(this).toDouble()
 
